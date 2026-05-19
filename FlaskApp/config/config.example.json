@@ -1,0 +1,20 @@
+{
+    "email": "your-email@gmail.com",
+    "password": "your-app-password-16-chars",
+    "check_interval": 300,
+    "auto_label": true,
+    "initial_load": 20,
+    "model_to_use": "Voting Classifier",
+    "notification_settings": {
+        "notify_on_spam": true,
+        "notify_on_ham": false,
+        "telegram_token": "",
+        "telegram_chat_id": ""
+    },
+    "advanced_settings": {
+        "max_emails_per_check": 50,
+        "mark_as_read": false,
+        "move_spam_to_folder": false,
+        "spam_folder_name": "[Gmail]/Spam"
+    }
+}

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Spam Detector</title>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>AI Spam</h1>
+                    <span>Detector</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="text">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Phân tích văn bản</span>
+                </button>
+                <button class="nav-item" data-tab="csv">
+                    <i class="fa-solid fa-file-csv"></i>
+                    <span>Phân tích CSV</span>
+                </button>
+                <button class="nav-item" data-tab="email">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span>Email Monitor</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="config-section">
+                    <h3><i class="fa-solid fa-sliders"></i> Cấu hình Model</h3>
+                    <div class="model-selector">
+                        <label class="checkbox-label select-all">
+                            <input type="checkbox" id="select-all">
+                            <span class="checkmark"></span>
+                            <span>Chọn tất cả</span>
+                        </label>
+                        <div id="model-list" class="custom-scrollbar">
+                            {% for model in models %}
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="model" value="{{ model }}" class="model-checkbox">
+                                <span class="checkmark"></span>
+                                <span>{{ model }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="info-tip">
+                    <i class="fa-regular fa-lightbulb"></i>
+                    <p>Mẹo: Sử dụng <strong>Voting Classifier</strong> để có độ chính xác cao nhất.</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div class="header-welcome">
+                    <h2>Xin chào,</h2>
+                    <p>Hệ thống đã sẵn sàng phân tích.</p>
+                </div>
+                <div class="header-actions">
+                    <button class="icon-btn"><i class="fa-regular fa-bell"></i></button>
+                    <button class="icon-btn"><i class="fa-regular fa-circle-question"></i></button>
+                    <div class="user-profile">
+                        <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <!-- Tab 1: Text Analysis -->
+                <div class="tab-content active" id="text-tab">
+                    <div class="card input-card">
+                        <div class="card-header">
+                            <div class="header-icon"><i class="fa-solid fa-pen-nib"></i></div>
+                            <div>
+                                <h3>Nhập nội dung</h3>
+                                <p>Hỗ trợ tiếng Việt và tiếng Anh</p>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="textarea-wrapper">
+                                <textarea id="message-input"
+                                    placeholder="Nhập nội dung email, tin nhắn SMS, Zalo cần kiểm tra..."></textarea>
+                                <div class="textarea-actions">
+                                    <button class="action-btn" title="Dán"><i class="fa-regular fa-paste"></i></button>
+                                    <button class="action-btn" title="Xóa"><i class="fa-solid fa-eraser"></i></button>
+                                </div>
+                            </div>
+                            <button class="btn-primary" id="analyze-btn">
+                                <i class="fa-solid fa-magnifying-glass"></i> Phân tích ngay
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="results" class="results-section" style="display:none;">
+                        <h3 class="section-title"><i class="fa-solid fa-square-poll-vertical"></i> Kết quả phân tích
+                        </h3>
+                        <div id="results-grid" class="results-grid"></div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: CSV Analysis -->
+                <div class="tab-content" id="csv-tab">
+                    <div class="card upload-card">
+                        <div class="card-header">
+                            <div class="header-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                            <div>
+                                <h3>Tải lên file CSV</h3>
+                                <p>Phân tích hàng loạt tin nhắn</p>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="file-upload-area">
+                                <input type="file" id="csv-file" accept=".csv" hidden>
+                                <div class="upload-placeholder" onclick="document.getElementById('csv-file').click()">
+                                    <i class="fa-solid fa-file-csv"></i>
+                                    <p>Kéo thả file vào đây hoặc <span>nhấn để chọn</span></p>
+                                    <small>Hỗ trợ file .csv (cột 'Message', delimiter '|')</small>
+                                </div>
+                                <div id="file-info" class="file-info" style="display:none;">
+                                    <i class="fa-solid fa-file-lines"></i>
+                                    <span id="file-name">filename.csv</span>
+                                    <button class="remove-file"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                            </div>
+                            <button class="btn-primary" id="analyze-csv-btn">
+                                <i class="fa-solid fa-play"></i> Bắt đầu phân tích
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="csv-results" class="results-section" style="display:none;">
+                        <div class="section-header">
+                            <h3 class="section-title"><i class="fa-solid fa-table"></i> Kết quả chi tiết</h3>
+                            <button class="btn-secondary" id="download-btn">
+                                <i class="fa-solid fa-download"></i> Tải báo cáo
+                            </button>
+                        </div>
+                        <div class="table-wrapper custom-scrollbar">
+                            <table id="results-table">
+                                <thead id="table-head"></thead>
+                                <tbody id="table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Email Monitor -->
+                <div class="tab-content" id="email-tab">
+                    <div class="card email-card">
+                        <div class="card-header">
+                            <div class="header-icon"><i class="fa-brands fa-google"></i></div>
+                            <div>
+                                <h3>Gmail Monitor</h3>
+                                <p>Giám sát hộp thư đến tự động</p>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <!-- Login Form -->
+                            <div id="gmail-login-form">
+                                <div class="form-group">
+                                    <label><i class="fa-regular fa-envelope"></i> Email Gmail</label>
+                                    <input type="email" id="gmail-email" placeholder="example@gmail.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>
+                                        <i class="fa-solid fa-key"></i> App Password
+                                        <span class="tooltip"
+                                            data-tooltip="Tạo tại myaccount.google.com/apppasswords"><i
+                                                class="fa-solid fa-circle-info"></i></span>
+                                    </label>
+                                    <input type="password" id="gmail-password"
+                                        placeholder="16 ký tự (không khoảng trắng)">
+                                </div>
+                                <button class="btn-primary" id="connect-gmail-btn">
+                                    <i class="fa-solid fa-link"></i> Kết nối Gmail
+                                </button>
+                            </div>
+
+                            <!-- Connected State -->
+                            <div id="gmail-connected" style="display:none;">
+                                <div class="connection-status">
+                                    <div class="status-info">
+                                        <div class="status-icon"><i class="fa-solid fa-check"></i></div>
+                                        <div>
+                                            <h4>Đã kết nối</h4>
+                                            <span id="connected-email">email@example.com</span>
+                                        </div>
+                                    </div>
+                                    <button class="btn-danger-outline" id="disconnect-btn">
+                                        <i class="fa-solid fa-right-from-bracket"></i> Ngắt kết nối
+                                    </button>
+                                </div>
+
+                                <div class="monitor-controls">
+                                    <div class="control-group">
+                                        <label>Mô hình phân tích:</label>
+                                        <div class="select-wrapper">
+                                            <select id="email-model-select">
+                                                {% for model in models %}
+                                                <option value="{{ model }}" {% if loop.last %}selected{% endif %}>{{
+                                                    model }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                    <button class="btn-primary" id="fetch-emails-btn">
+                                        <i class="fa-solid fa-rotate"></i> Quét hộp thư
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="email-list" class="results-section" style="display:none;">
+                        <h3 class="section-title">
+                            <i class="fa-solid fa-inbox"></i> Danh sách Email
+                            <span class="badge-count" id="email-count">0</span>
+                        </h3>
+                        <div id="emails-container" class="email-grid"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay" style="display:none;">
+        <div class="loader">
+            <div class="circle"></div>
+            <div class="circle"></div>
+            <div class="circle"></div>
+        </div>
+        <p>Đang xử lý dữ liệu...</p>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+
+</html>
